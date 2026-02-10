@@ -1,0 +1,41 @@
+{
+  "name": "ragwithdocs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "types": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "migration:run": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/db/datasource.ts",
+    "migration:generate": "npx ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate src/db/migrations/$npm_config_name -d src/db/datasource.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^25.2.0",
+    "dotenv": "^17.2.3",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@langchain/classic": "^1.0.13",
+    "@langchain/core": "^1.1.18",
+    "@langchain/langgraph": "^1.1.3",
+    "@langchain/ollama": "^1.2.2",
+    "@langchain/qdrant": "^1.0.1",
+    "@langchain/textsplitters": "^1.0.1",
+    "@types/adm-zip": "^0.5.7",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.0.0",
+    "adm-zip": "^0.5.16",
+    "express": "^5.2.1",
+    "langchain": "^1.2.16",
+    "mammoth": "^1.11.0",
+    "multer": "^2.0.2",
+    "node-stream-zip": "^1.15.0",
+    "pg": "^8.18.0",
+    "typeorm": "^0.3.28",
+    "zod": "^4.3.6"
+  }
+}
