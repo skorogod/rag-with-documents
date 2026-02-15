@@ -9,3 +9,5 @@ export const QDRANT_URL = process.env.QDRANT_URL;
 export const VECTORE_COLLECTION = process.env.VECTORE_COLLECTION;
 
 export const SERVER_PORT = process.env.SERVER_PORT;
+
+export  const TOP_K = process.env.TOP_K ? +process.env.TOP_K : 5;

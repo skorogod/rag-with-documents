@@ -1,61 +1,81 @@
 import * as z from "zod";
 import { tool } from "@langchain/core/tools";
-import { retriever } from "../rag/vectoreStore";
+import { retriever, vectoreStore } from "../rag/vectoreStore";
 import { Document } from "@langchain/core/documents";
+import { TOP_K } from "../../config";
+
+// Расширяем схему для поддержки фильтрации по дате
+const RetrieveSchema = z.object({
+  query: z.string().describe("Поисковый запрос"),
+  year: z.number().nullable().optional().describe("Год для фильтрации (например, 2024)"),
+});
 
 export const retrieve = tool(
-  async (input: unknown) => {
-    console.log('🔧 Тип входа:', typeof input);
-    console.log('🔧 Значение входа:', JSON.stringify(input, null, 2));
-    
-    // Универсальная обработка входа
-    let query: string;
-    
-    if (typeof input === 'string') {
-      // Случай 1: пришла строка напрямую
-      query = input;
-      
-    } else if (Array.isArray(input)) {
-      // Случай 2: пришёл массив (частая проблема!)
-      // Пример: args: ["мой запрос"] или args: [{ query: "..." }]
-      const firstItem = input[0];
-      
-      if (typeof firstItem === 'string') {
-        query = firstItem;
-      } else if (firstItem && typeof firstItem === 'object' && 'query' in firstItem) {
-        query = (firstItem as { query: string }).query;
-      } else {
-        query = JSON.stringify(firstItem);
-      }
-      
-    } else if (input && typeof input === 'object') {
-      // Случай 3: пришёл объект
-      if ('query' in input) {
-        query = (input as { query: string }).query;
-      } else if ('input' in input) {
-        query = (input as { input: string }).input;
-      } else {
-        query = JSON.stringify(input);
-      }
-      
-    } else {
-      // Случай 4: что-то неожиданное
-      query = String(input);
-    }
-    
-    console.log('✅ Извлечённый запрос:', query);
+  async (input: z.infer<typeof RetrieveSchema>) => {
+    console.log('🔧 Входные данные:', JSON.stringify(input, null, 2));
     
     try {
-      const documents: Document[] = await retriever.invoke(query);
+      // Создаем фильтр для Qdrant
+      const filter: any = {
+        must: [] // Qdrant использует must для AND условий
+      };
       
-      if (documents.length === 0) {
-        return "Не найдено релевантных документов по запросу.";
+      // Добавляем фильтр по году, если указан
+      if (input.year) {
+        filter.must.push({
+          key: "metadata.year",
+          match: {
+            value: input.year
+          }
+        });
       }
       
-      return documents
-        .map((doc, i) => 
-          `Документ ${i + 1}:\nСодержание: ${doc.pageContent}\nМетаданные: ${JSON.stringify(doc.metadata)}`
-        )
+      
+      console.log('🔍 Применяемый фильтр:', filter.must.length > 0 ? filter : 'без фильтра');
+      
+      // Вызываем ретривер с фильтром через configurable
+      const documents = await vectoreStore.similaritySearchWithScore(input.query, TOP_K, filter)
+      
+      if (documents.length === 0) {
+        // Формируем информативное сообщение об отсутствии результатов
+        let dateMessage = '';
+        if (input.year) {
+          dateMessage = ` за ${input.year} год`;
+        }
+        
+        return `Не найдено релевантных документов${dateMessage} по запросу "${input.query}".`;
+      }
+      
+      console.log("QUERY: ", input.query)
+      console.log("DOCUMENTS", documents)
+
+      documents.forEach(doc => {
+        console.log(doc[0].metadata.year)
+      })
+
+      // Фильтруем результаты на клиентской стороне для большей точности
+      let filteredDocuments = documents;
+      
+      if (input.year) {
+        filteredDocuments = filteredDocuments.filter(doc => {
+          const docYear = doc[0].metadata.year;
+          return docYear === input.year;
+        });
+      }
+      
+      
+      if (filteredDocuments.length === 0) {
+        return `Найдены документы по теме, но ни один не соответствует указанному периоду.`;
+      }
+      
+      return filteredDocuments
+        .map((doc, i) => {
+          const date = doc[0].metadata.year 
+            ? new Date(String(doc[0].metadata.year)).toLocaleDateString('ru-RU')
+            : 'дата неизвестна';
+          
+          return `Документ ${i + 1} (${date}):\n${doc[0].pageContent}\n${doc[0].metadata.source ? `\nИсточник: ${doc[0].metadata.source}` : ''}`;
+        })
         .join("\n\n---\n\n");
         
     } catch (error) {
@@ -64,16 +84,10 @@ export const retrieve = tool(
     }
   },
   {
-    name: "retrieve_blog_posts",
-    description: "Найди и верни информацию о внутренних процессах компании. Используй конкретный поисковый запрос.",
-    // Универсальная схема, принимающая любой формат
-    schema: z.union([
-      z.string().describe("Поисковый запрос"),
-      z.object({ query: z.string().describe("Поисковый запрос") }),
-      z.array(z.union([
-        z.string(),
-        z.object({ query: z.string() })
-      ])).describe("Массив с запросом")
-    ])
+    name: "retrieve_company_process_info",
+    description: `Поиск информации в базе знаний компании. Можно фильтровать по году.
+                  Примеры использования:
+                  - Для поиска за конкретный год: { "query": "правила безопасности", "year": 2024 }`,
+    schema: RetrieveSchema
   }
 );

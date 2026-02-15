@@ -28,16 +28,16 @@ const shouldRetrieve: ConditionalEdgeRouter<State> = (state) => {
 const builder = new StateGraph(GraphState)
   .addNode("generateQueryOrRespond", generateQueryOrRespond)
   .addNode("retrieve", toolNode)
-  .addNode("gradeDocuments", gradeDocuments)
-  .addNode("rewrite", rewrite)
+  // .addNode("gradeDocuments", gradeDocuments)
+  // .addNode("rewrite", rewrite)
   .addNode("generate", generate)
   // Add edges
   .addEdge(START, "generateQueryOrRespond")
   // Decide whether to retrieve
   .addConditionalEdges("generateQueryOrRespond", shouldRetrieve)
-  .addEdge("retrieve", "gradeDocuments")
+  .addEdge("retrieve", "generate")
   .addEdge("generate", END)
-  .addEdge("rewrite", "generateQueryOrRespond");
+  // .addEdge("rewrite", "generateQueryOrRespond");
 
 // Compile
 export const graph = builder.compile();

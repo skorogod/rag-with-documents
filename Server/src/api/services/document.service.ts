@@ -233,11 +233,19 @@ export class DocumentsService implements IDocumentsService {
     try {
         const allSplits = await splitter.splitText(text)
         const documents: LangChainDocument[] = []
+        const res = fileName.match((/_(\d+)\.md$/))
+        let year: number | null = null;
+        if (res) {
+          year = Number(res[1])
+        } else {
+          year = 2026
+        }
         allSplits.forEach((chunk) => {
             documents.push({
                 pageContent: chunk,
                 metadata: {
-                    fileName
+                    fileName,
+                    year
                 }
             })
         })
