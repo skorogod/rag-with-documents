@@ -1,8 +1,10 @@
 import { ChatOllama } from "@langchain/ollama";
 import { tools } from "./tools";
+import { CHAT_MODEL, OLLAMA_URL } from "../config";
 
 export const chatModel = new ChatOllama({
-    model: "llama3.2:3b-instruct-q4_K_M",
+    baseUrl: OLLAMA_URL,
+    model: CHAT_MODEL,
     temperature: 0,
 })
 

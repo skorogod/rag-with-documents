@@ -2,7 +2,7 @@ import * as z from "zod";
 import { tool } from "@langchain/core/tools";
 import { retriever, vectoreStore } from "../rag/vectoreStore";
 import { Document } from "@langchain/core/documents";
-import { TOP_K } from "../../config";
+import { EMBEDDINGS_MODEL, TOP_K } from "../../config";
 
 // Расширяем схему для поддержки фильтрации по дате
 const RetrieveSchema = z.object({
@@ -31,7 +31,7 @@ export const retrieve = tool(
       }
       
       
-      console.log('🔍 Применяемый фильтр:', filter.must.length > 0 ? filter : 'без фильтра');
+      console.log('🔍 Применяемый фильтр:', filter.must.length > 0 ? JSON.stringify(filter) : 'без фильтра');
       
       // Вызываем ретривер с фильтром через configurable
       const documents = await vectoreStore.similaritySearchWithScore(input.query, TOP_K, filter)
@@ -46,12 +46,11 @@ export const retrieve = tool(
         return `Не найдено релевантных документов${dateMessage} по запросу "${input.query}".`;
       }
       
+      console.log("EMBEDDINGS_MODEL:", EMBEDDINGS_MODEL)
       console.log("QUERY: ", input.query)
-      console.log("DOCUMENTS", documents)
-
-      documents.forEach(doc => {
-        console.log(doc[0].metadata.year)
-      })
+      console.log("DOCUMENTS", documents.forEach(doc => {
+        console.log(`Document: ${doc[0].metadata.fileName}\nyear: ${doc[0].metadata.year}\nscore: ${doc[1]}\n\n`)
+      }))
 
       // Фильтруем результаты на клиентской стороне для большей точности
       let filteredDocuments = documents;

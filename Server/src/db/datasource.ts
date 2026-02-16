@@ -10,7 +10,7 @@ export const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME || 'user',
   password: process.env.DB_PASSWORD || 'password',
   database: process.env.DB_DATABASE || 'chat_db',
-  synchronize: true,
+  synchronize: false,
   logging: process.env.NODE_ENV === 'development',
   entities: [ChatMessage, Document],
   migrations: ["src/db/migrations/*.ts"],
