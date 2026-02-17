@@ -36,7 +36,7 @@ export const retrieve = tool(
       // Вызываем ретривер с фильтром через configurable
       const documents = await vectoreStore.similaritySearchWithScore(input.query, TOP_K, filter)
       
-      if (documents.length === 0) {
+      if (documents.filter(doc => doc[1] > 0.5).length === 0) {
         // Формируем информативное сообщение об отсутствии результатов
         let dateMessage = '';
         if (input.year) {
@@ -45,6 +45,7 @@ export const retrieve = tool(
         
         return `Не найдено релевантных документов${dateMessage} по запросу "${input.query}".`;
       }
+      
       
       console.log("EMBEDDINGS_MODEL:", EMBEDDINGS_MODEL)
       console.log("QUERY: ", input.query)
